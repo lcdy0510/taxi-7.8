@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>대각선 이동을 허용한 택시 기하</title>
+  <style>
+    :root {
+      --ink: #192338;
+      --muted: #64728a;
+      --line: #dce4ef;
+      --blue: #3568d4;
+      --blue-light: #dce7ff;
+      --page: #f3f6fb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 26px 14px 40px;
+      background: var(--page); color: var(--ink);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .container { width: min(1080px, 100%); margin: auto; }
+    h1 { margin: 0 0 8px; font-size: clamp(23px, 4vw, 32px); letter-spacing: -.6px; }
+    .intro { margin: 0 0 20px; color: var(--muted); line-height: 1.65; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(270px, .85fr); gap: 16px; }
+    .card { background: white; border: 1px solid var(--line); border-radius: 17px; box-shadow: 0 5px 20px #24395b0a; }
+    .graph-card { padding: 16px; }
+    .heading-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 2px 2px 12px; }
+    h2 { margin: 0; font-size: 16px; }
+    .shape-pill { padding: 6px 10px; border-radius: 99px; background: #eaf0ff; color: #3159a7; font-size: 12px; white-space: nowrap; }
+    .plot-box { padding: 8px; border: 1px solid #e6ebf3; border-radius: 13px; background: #f8faff; }
+    svg { display: block; width: 100%; height: auto; }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 11px 4px 0; color: var(--muted); font-size: 12px; }
+    .key { display: inline-flex; align-items: center; gap: 6px; }
+    .swatch { width: 17px; height: 10px; border-radius: 3px; background: var(--blue-light); border: 1px solid #9aadd4; }
+    .dash { width: 19px; border-top: 2px dashed #8994a8; }
+    .controls { padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+    .label { display: block; margin-bottom: 8px; font-size: 13px; color: var(--muted); }
+    .inputs { display: flex; align-items: center; gap: 10px; }
+    input[type=range] { width: 100%; accent-color: var(--blue); }
+    input[type=number] { width: 102px; padding: 9px 10px; border: 1px solid #ccd7e6; border-radius: 9px; font: inherit; font-size: 15px; color: var(--ink); }
+    .ends { display: flex; justify-content: space-between; color: #7a879b; font-size: 11px; margin-top: 2px; }
+    .presets { display: flex; flex-wrap: wrap; gap: 7px; }
+    button { border: 1px solid #d4ddec; background: white; color: #34425a; padding: 8px 11px; border-radius: 9px; cursor: pointer; font: inherit; font-size: 13px; }
+    button:hover, button.active { border-color: #aebfee; color: #244fae; background: #eaf0ff; }
+    .metric { border-top: 1px solid #e9edf4; padding-top: 13px; }
+    .big { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .detail { margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .formula { padding: 12px; border: 1px solid #e6ebf3; border-radius: 11px; background: #f8faff; line-height: 1.75; font-family: Georgia, "Times New Roman", serif; font-size: 15px; }
+    .explain { margin-top: 16px; padding: 18px 20px; }
+    .explain p { margin: 8px 0 0; color: #4f5d73; font-size: 14px; line-height: 1.75; }
+    .small-note { color: #77849a !important; font-size: 12px !important; }
+    @media (max-width: 760px) { body { padding: 18px 10px 28px; } .layout { grid-template-columns: 1fr; } .controls { padding: 17px; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>대각선 이동을 허용한 택시 기하</h1>
+      <p class="intro">수평·수직 이동에 기울기가 m 또는 −m인 대각선 이동을 추가하면, 거리 1 이하인 점들의 모양은 어떻게 변할까요?</p>
+    </header>
+
+    <main class="layout">
+      <section class="card graph-card">
+        <div class="heading-row">
+          <h2>단위 원: 원점에서 거리가 1 이하인 점들의 집합</h2>
+          <span class="shape-pill" id="shapeTag">정팔각형</span>
+        </div>
+        <div class="plot-box">
+          <svg id="plot" viewBox="0 0 620 520" role="img" aria-label="기울기 m에 따라 변하는 단위 원">
+            <defs><clipPath id="clip"><rect x="55" y="20" width="510" height="470" /></clipPath></defs>
+            <g id="grid"></g>
+            <g clip-path="url(#clip)">
+              <circle id="euclidCircle" fill="none" stroke="#8994a8" stroke-width="1.8" stroke-dasharray="6 6" />
+              <polygon id="unitPolygon" fill="#dce7ff" fill-opacity=".88" stroke="#3568d4" stroke-width="3" stroke-linejoin="round" />
+              <g id="vertices"></g>
+            </g>
+            <g fill="#66748a" font-size="13" font-family="sans-serif">
+              <text x="574" y="263">x</text><text x="321" y="17">y</text><text x="317" y="270" text-anchor="end">0</text>
+            </g>
+          </svg>
+        </div>
+        <div class="legend">
+          <span class="key"><i class="swatch"></i>새로운 거리의 단위 원</span>
+          <span class="key"><i class="dash"></i>유클리드 단위원(비교)</span>
+        </div>
+      </section>
+
+      <aside class="card controls">
+        <div>
+          <h2>기울기 m 조절</h2>
+          <label class="label" for="slider" style="margin-top:12px">슬라이더 또는 숫자를 직접 바꿔 보세요. (−5 ≤ m ≤ 5)</label>
+          <div class="inputs">
+            <input id="slider" type="range" min="-5" max="5" step="0.01" value="1" aria-label="기울기 m 슬라이더">
+            <input id="number" type="number" min="-5" max="5" step="0.01" value="1" aria-label="기울기 m 숫자 입력">
+          </div>
+          <div class="ends"><span>−5</span><span>0</span><span>5</span></div>
+        </div>
+
+        <div>
+          <span class="label">빠른 선택</span>
+          <div class="presets">
+            <button type="button" data-m="-5">m = −5</button>
+            <button type="button" data-m="-1">m = −1</button>
+            <button type="button" data-m="0">m = 0</button>
+            <button type="button" data-m="1" class="active">m = 1</button>
+            <button type="button" data-m="5">m = 5</button>
+          </div>
+        </div>
+
+        <div class="metric">
+          <span class="label">현재 기울기</span>
+          <div class="big" id="mReadout">m = 1.00</div>
+          <div class="detail" id="description">m = 1일 때 단위 원은 정팔각형입니다.</div>
+        </div>
+
+        <div class="metric">
+          <span class="label">대각선 방향 꼭짓점 (제1사분면)</span>
+          <div class="big" id="vertexReadout" style="font-size:19px">(0.707, 0.707)</div>
+          <div class="detail">m = 0에서는 별도의 대각선 방향이 없어집니다.</div>
+        </div>
+
+        <div class="metric">
+          <span class="label">대각선 방향과 x축 사이의 예각</span>
+          <div class="big" id="angleReadout" style="font-size:19px">45.00°</div>
+          <div class="detail">각도는 |m|을 기준으로 계산합니다.</div>
+        </div>
+
+        <div class="metric">
+          <span class="label">거리함수에 사용되는 기울기 크기</span>
+          <div class="big" id="absReadout" style="font-size:19px">|m| = 1.00</div>
+          <div class="detail">m과 −m은 같은 두 대각선 방향을 허용하므로 단위 원의 모양이 같습니다.</div>
+        </div>
+      </aside>
+    </main>
+
+    <section class="card explain">
+      <h2>그래프 해석</h2>
+      <p>파란색 도형은 새롭게 정의한 거리에서 원점으로부터의 거리가 1 이하인 점들의 집합입니다. m이 0이 아니면 일반적으로 중심대칭인 팔각형이 나타나며, |m| = 1일 때 정팔각형이 됩니다. m = 0이면 대각선 이동 방향이 수평 방향과 겹치므로 기존 택시 기하의 마름모가 나타납니다.</p>
+      <p class="small-note">이 모델은 수평·수직 방향과 기울기가 m 또는 −m인 방향으로만 이동할 수 있고, 각 선분의 길이는 유클리드 길이로 계산한다고 가정합니다. 따라서 m과 −m의 허용 방향 집합은 동일하며, 도형은 m의 부호가 아니라 |m|에 따라 결정됩니다.</p>
+      <div class="formula" style="margin-top:12px">
+        t = |m|, a = |x₂ − x₁|, b = |y₂ − y₁|<br>
+        t = 0이면 d = a + b<br>
+        t &gt; 0이고 b ≤ ta이면 d = a + ((√(1+t²) − 1)/t)b<br>
+        t &gt; 0이고 b ≥ ta이면 d = b + (√(1+t²) − t)a
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (() => {
+      const $ = id => document.getElementById(id);
+      const slider = $('slider');
+      const number = $('number');
+      const polygon = $('unitPolygon');
+      const circle = $('euclidCircle');
+      const vertexGroup = $('vertices');
+      const grid = $('grid');
+      const buttons = [...document.querySelectorAll('[data-m]')];
+      const cx = 310, cy = 255, scale = 205;
+      const sx = x => cx + x * scale;
+      const sy = y => cy - y * scale;
+      const fmt = n => (Math.abs(n) < 0.0005 ? 0 : n).toFixed(3);
+
+      let gridMarkup = '';
+      for (let i = -4; i <= 4; i++) {
+        const v = i / 4;
+        const x = sx(v), y = sy(v);
+        const axis = i === 0;
+        gridMarkup += `<line x1="${x}" y1="20" x2="${x}" y2="490" stroke="${axis ? '#8995a8' : '#e3e8f0'}" stroke-width="${axis ? 1.7 : 1}"/>`;
+        gridMarkup += `<line x1="55" y1="${y}" x2="565" y2="${y}" stroke="${axis ? '#8995a8' : '#e3e8f0'}" stroke-width="${axis ? 1.7 : 1}"/>`;
+        if (Math.abs(v) === 1) {
+          gridMarkup += `<text x="${x}" y="${cy + 19}" font-size="11" text-anchor="middle" fill="#758197">${v}</text>`;
+          gridMarkup += `<text x="${cx - 12}" y="${y + 4}" font-size="11" text-anchor="end" fill="#758197">${v}</text>`;
+        }
+      }
+      grid.innerHTML = gridMarkup;
+      circle.setAttribute('cx', cx);
+      circle.setAttribute('cy', cy);
+      circle.setAttribute('r', scale);
+
+      function update(raw) {
+        let m = Number(raw);
+        if (!Number.isFinite(m)) m = 1;
+        m = Math.max(-5, Math.min(5, m));
+        m = Math.round(m * 100) / 100;
+        const t = Math.abs(m);
+        slider.value = String(m);
+        number.value = String(m);
+
+        const x = 1 / Math.sqrt(1 + t * t);
+        const y = t / Math.sqrt(1 + t * t);
+        const angle = Math.atan(t) * 180 / Math.PI;
+        const pts = t < 1e-9
+          ? [[1, 0], [0, 1], [-1, 0], [0, -1]]
+          : [[1, 0], [x, y], [0, 1], [-x, y], [-1, 0], [-x, -y], [0, -1], [x, -y]];
+
+        polygon.setAttribute('points', pts.map(([px, py]) => `${sx(px)},${sy(py)}`).join(' '));
+        vertexGroup.innerHTML = pts.map(([px, py], i) => {
+          const diagonal = t >= 1e-9 && i % 2 === 1;
+          return `<circle cx="${sx(px)}" cy="${sy(py)}" r="${diagonal ? 4.5 : 4}" fill="${diagonal ? '#244fae' : '#ffffff'}" stroke="#244fae" stroke-width="1.8"/>`;
+        }).join('');
+
+        $('mReadout').textContent = `m = ${m.toFixed(2)}`;
+        $('absReadout').textContent = `|m| = ${t.toFixed(2)}`;
+        $('vertexReadout').textContent = t < 1e-9 ? '해당 없음 (마름모)' : `(${fmt(x)}, ${fmt(y)})`;
+        $('angleReadout').textContent = t < 1e-9 ? '해당 없음' : `${angle.toFixed(2)}°`;
+
+        if (t < 1e-9) {
+          $('shapeTag').textContent = '마름모';
+          $('description').textContent = 'm = 0이면 대각선 방향이 수평 방향과 겹쳐, 기존 택시 기하의 마름모가 됩니다.';
+        } else if (Math.abs(t - 1) < 0.005) {
+          $('shapeTag').textContent = '정팔각형';
+          $('description').textContent = 'm = 1 또는 m = −1일 때 단위 원은 정팔각형입니다.';
+        } else {
+          $('shapeTag').textContent = '팔각형';
+          $('description').textContent = `대각선 방향은 x축과 ${angle.toFixed(2)}°를 이룹니다. m의 부호가 바뀌어도 모양은 같습니다.`;
+        }
+        buttons.forEach(btn => btn.classList.toggle('active', Math.abs(Number(btn.dataset.m) - m) < 0.005));
+      }
+
+      slider.addEventListener('input', event => update(event.target.value));
+      number.addEventListener('change', event => update(event.target.value));
+      number.addEventListener('keydown', event => { if (event.key === 'Enter') update(event.target.value); });
+      buttons.forEach(button => button.addEventListener('click', () => update(button.dataset.m)));
+      update(1);
+    })();
+  </script>
+</body>
+</html>
